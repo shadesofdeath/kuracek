@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kura Çekimi</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
+
+<!-- Canvas Confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #080E1A;
+    --surface:  #0F1D30;
+    --card:     #142236;
+    --gold:     #F4A900;
+    --gold-dim: #A87200;
+    --teal:     #3ED6C9;
+    --text:     #E8EEF8;
+    --muted:    #7A90AF;
+    --danger:   #E05A5A;
+    --radius:   14px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── STARFIELD ── */
+  #stars {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 20% 20%, #0a1828 0%, #080E1A 70%);
+  }
+  .star {
+    position: absolute; border-radius: 50%;
+    background: #fff; animation: twinkle var(--d) ease-in-out infinite var(--delay);
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: .15; transform: scale(.8); }
+    50%      { opacity: .9;  transform: scale(1.2); }
+  }
+
+  /* ── LAYOUT ── */
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 820px; margin: 0 auto;
+    padding: 40px 20px 80px;
+    display: flex; flex-direction: column; align-items: center; gap: 36px;
+  }
+
+  /* ── HEADER ── */
+  header { text-align: center; }
+  .logo-ring {
+    width: 90px; height: 90px; border-radius: 50%;
+    border: 3px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    box-shadow: 0 0 30px #F4A90055;
+    animation: pulseRing 3s ease-in-out infinite;
+  }
+  @keyframes pulseRing {
+    0%,100% { box-shadow: 0 0 20px #F4A90040; }
+    50%      { box-shadow: 0 0 50px #F4A90088; }
+  }
+  .logo-ring svg { width: 50px; height: 50px; }
+  h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, #F4C400, #F4A900, #E07800);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: .04em;
+    line-height: 1.2;
+  }
+  .subtitle {
+    margin-top: 8px;
+    color: var(--muted); font-size: .9rem; letter-spacing: .12em; text-transform: uppercase;
+  }
+
+  /* ── CARD ── */
+  .card {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid #1E3450;
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+  .card-title {
+    font-size: .75rem; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 16px; font-weight: 600;
+  }
+
+  /* ── NAME INPUT ── */
+  .input-row { display: flex; gap: 10px; }
+  .input-row input {
+    flex: 1; background: var(--surface);
+    border: 1px solid #1E3450; border-radius: 10px;
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: .95rem;
+    padding: 12px 16px; outline: none;
+    transition: border-color .2s;
+  }
+  .input-row input:focus { border-color: var(--teal); }
+  .input-row input::placeholder { color: var(--muted); }
+
+  .btn {
+    padding: 12px 22px; border-radius: 10px; border: none;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    font-size: .9rem; font-weight: 600;
+    transition: transform .1s, box-shadow .2s;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-add {
+    background: var(--teal); color: #080E1A;
+    box-shadow: 0 4px 16px #3ED6C940;
+  }
+  .btn-add:hover { box-shadow: 0 4px 26px #3ED6C966; }
+
+  /* ── TAG LIST ── */
+  .tag-list {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+    min-height: 36px;
+  }
+  .tag {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid #1E3450;
+    border-radius: 99px; padding: 5px 14px;
+    font-size: .85rem; font-family: 'Space Mono', monospace;
+    animation: popIn .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .tag.vip { border-color: var(--gold); color: var(--gold); }
+  @keyframes popIn {
+    from { transform: scale(.5); opacity: 0; }
+    to   { transform: scale(1);  opacity: 1; }
+  }
+  .tag-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 1rem; line-height: 1;
+    padding: 0; transition: color .15s;
+  }
+  .tag-del:hover { color: var(--danger); }
+  .empty-msg { color: var(--muted); font-size: .85rem; padding: 6px 0; }
+
+  /* ── COUNT SELECTOR ── */
+  .count-row {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .count-label { color: var(--muted); font-size: .9rem; }
+  .count-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .count-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: 2px solid #1E3450;
+    background: var(--surface); color: var(--text);
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: all .2s;
+  }
+  .count-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .count-btn.active {
+    border-color: var(--gold); background: var(--gold);
+    color: #080E1A; box-shadow: 0 0 20px #F4A90060;
+  }
+
+  /* ── DRAW BUTTON ── */
+  .btn-draw {
+    width: 100%; padding: 18px;
+    font-size: 1.1rem; letter-spacing: .08em;
+    border-radius: 12px; border: none;
+    background: linear-gradient(135deg, #F4C400, #E07800);
+    color: #080E1A; font-weight: 700; font-family: 'Cinzel Decorative', serif;
+    cursor: pointer; position: relative; overflow: hidden;
+    box-shadow: 0 6px 30px #F4A90050;
+    transition: box-shadow .2s, transform .1s;
+  }
+  .btn-draw:hover { box-shadow: 0 8px 40px #F4A90088; }
+  .btn-draw:active { transform: scale(.98); }
+  .btn-draw:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn-draw .shimmer {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, #ffffff33 50%, transparent 100%);
+    transform: translateX(-100%);
+  }
+
+  /* ── DRAW STAGE ── */
+  #drawStage {
+    width: 100%; display: none;
+    flex-direction: column; align-items: center; gap: 28px;
+  }
+
+  /* ── DRUM ── */
+  .drum-wrap {
+    position: relative; width: 200px; height: 200px;
+  }
+  .drum {
+    width: 100%; height: 100%; border-radius: 50%;
+    border: 3px solid var(--gold);
+    background: radial-gradient(circle at 35% 35%, #1A3050, #080E1A);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+    box-shadow: 0 0 60px #F4A90030, inset 0 0 40px #00000060;
+  }
+  .drum-balls {
+    position: absolute; inset: 0;
+  }
+  .dball {
+    position: absolute;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: .65rem; font-weight: 700;
+    text-align: center; line-height: 1.1; color: #080E1A;
+    pointer-events: none; box-shadow: inset -4px -4px 8px rgba(0,0,0,.3);
+    transition: opacity .3s;
+  }
+  .drum-label {
+    position: absolute; bottom: -32px; left: 50%; transform: translateX(-50%);
+    font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap;
+  }
+
+  /* ── SLOT ── */
+  .slot-area {
+    display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%;
+  }
+  .slot-track {
+    width: min(360px, 100%);
+    background: var(--surface);
+    border: 1px solid #1E3450;
+    border-radius: 12px; padding: 8px;
+    height: 72px; overflow: hidden; position: relative;
+  }
+  .slot-track::before, .slot-track::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 20px; z-index: 2;
+    pointer-events: none;
+  }
+  .slot-track::before { top: 0; background: linear-gradient(var(--surface), transparent); }
+  .slot-track::after  { bottom: 0; background: linear-gradient(transparent, var(--surface)); }
+  .slot-inner {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; will-change: transform;
+  }
+  .slot-item {
+    height: 56px; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: 1rem;
+    font-weight: 700; color: var(--text); border-radius: 8px; flex-shrink: 0;
+  }
+
+  /* ── RESULTS ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; width: 100%;
+  }
+  .result-card {
+    background: var(--card); border: 1px solid #1E3450;
+    border-radius: 12px; padding: 20px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    text-align: center; opacity: 0; transform: translateY(20px);
+  }
+  .result-card.vip { border-color: var(--gold); box-shadow: 0 0 20px #F4A90030; }
+  .result-rank {
+    font-family: 'Space Mono', monospace; font-size: .7rem;
+    color: var(--muted); letter-spacing: .1em;
+  }
+  .result-name {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--text); word-break: break-word;
+  }
+  .result-card.vip .result-name { color: var(--gold); }
+  .result-crown { font-size: 1.4rem; }
+
+  /* ── RESET BTN ── */
+  .btn-reset {
+    margin-top: 8px;
+    background: transparent; border: 1px solid #1E3450;
+    color: var(--muted); padding: 10px 28px; border-radius: 10px;
+    font-family: 'Inter', sans-serif; font-size: .85rem; cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .btn-reset:hover { border-color: var(--muted); color: var(--text); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--card); border: 1px solid var(--danger);
+    color: var(--danger); padding: 10px 22px; border-radius: 99px;
+    font-size: .85rem; font-weight: 500; opacity: 0;
+    transition: all .3s; z-index: 99; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ── VIP BADGE ── */
+  .vip-note {
+    font-size: .75rem; color: var(--gold-dim);
+    background: #F4A90012; border: 1px solid #F4A90030;
+    border-radius: 8px; padding: 8px 12px; margin-top: 10px;
+    display: none;
+  }
+  .vip-note.visible { display: block; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #1E3450; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-ring">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="26" stroke="#F4A900" stroke-width="2.5" stroke-dasharray="6 4"/>
+        <circle cx="30" cy="12" r="6" fill="#F4A900"/>
+        <circle cx="48" cy="41" r="6" fill="#3ED6C9"/>
+        <circle cx="12" cy="41" r="6" fill="#E07800"/>
+        <line x1="30" y1="18" x2="30" y2="30" stroke="#F4A900" stroke-width="2"/>
+        <line x1="43" y1="37" x2="30" y2="30" stroke="#3ED6C9" stroke-width="2"/>
+        <line x1="17" y1="37" x2="30" y2="30" stroke="#E07800" stroke-width="2"/>
+        <circle cx="30" cy="30" r="3" fill="#F0F4FF"/>
+      </svg>
+    </div>
+    <h1>KURA ÇEKİMİ</h1>
+    <p class="subtitle">Şansını dene · Adil seçim</p>
+  </header>
+
+  <!-- SETUP PANEL -->
+  <div id="setupPanel" style="width:100%; display:flex; flex-direction:column; gap:18px;">
+
+    <!-- Names -->
+    <div class="card">
+      <div class="card-title">📋 İsim Listesi</div>
+      <div class="input-row">
+        <input id="nameInput" type="text" placeholder="İsim gir ve ekle…" maxlength="40"
+               autocomplete="off" spellcheck="false">
+        <button class="btn btn-add" onclick="addName()">Ekle</button>
+      </div>
+      <div id="vipNote" class="vip-note">
+        ⭐ Berkay ve Erdoğan listede — bu isimler her zaman kazananlar arasında çıkacak.
+      </div>
+      <div id="tagList" class="tag-list">
+        <span class="empty-msg">Henüz isim eklenmedi.</span>
+      </div>
+    </div>
+
+    <!-- Count -->
+    <div class="card">
+      <div class="card-title">🎯 Kaç Kişi Seçilsin?</div>
+      <div class="count-row">
+        <span class="count-label">Kazanan sayısı:</span>
+        <div class="count-btns" id="countBtns"></div>
+      </div>
+    </div>
+
+    <!-- Draw -->
+    <button class="btn-draw" id="drawBtn" onclick="startDraw()">
+      <span class="shimmer" id="shimmer"></span>
+      🎱 KURA ÇEK
+    </button>
+
+  </div>
+
+  <!-- DRAW STAGE -->
+  <div id="drawStage">
+
+    <div class="drum-wrap">
+      <div class="drum" id="drum">
+        <div class="drum-balls" id="drumBalls"></div>
+      </div>
+      <div class="drum-label">kura topu çekiliyor…</div>
+    </div>
+
+    <div class="slot-area" id="slotArea"></div>
+
+    <div class="results-grid" id="resultsGrid" style="display:none"></div>
+
+    <button class="btn-reset" onclick="resetAll()">↩ Yeniden Başla</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+gsap.registerPlugin(TextPlugin);
+
+// ── STATE ──
+let names = [];
+let selectedCount = 3;
+let isDrawing = false;
+const VIP = ['berkay', 'erdoğan'];
+
+// ── STARS ──
+(function buildStars() {
+  const c = document.getElementById('stars');
+  for (let i = 0; i < 140; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() * 2.5 + .5;
+    s.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      top:${Math.random()*100}%;
+      left:${Math.random()*100}%;
+      --d:${(Math.random()*3+2).toFixed(1)}s;
+      --delay:-${(Math.random()*4).toFixed(1)}s;
+    `;
+    c.appendChild(s);
+  }
+})();
+
+// ── SHIMMER ──
+function loopShimmer() {
+  gsap.fromTo('#shimmer', { x: '-100%' }, {
+    x: '200%', duration: 1.8, ease: 'power1.inOut',
+    onComplete: () => setTimeout(loopShimmer, 2200)
+  });
+}
+loopShimmer();
+
+// ── COUNT BUTTONS ──
+(function buildCountBtns() {
+  const wrap = document.getElementById('countBtns');
+  for (let i = 1; i <= 10; i++) {
+    const b = document.createElement('button');
+    b.className = 'count-btn' + (i === selectedCount ? ' active' : '');
+    b.textContent = i;
+    b.onclick = () => {
+      selectedCount = i;
+      document.querySelectorAll('.count-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    };
+    wrap.appendChild(b);
+  }
+})();
+
+// ── NAME MANAGEMENT ──
+function isVip(n) {
+  return VIP.includes(n.trim().toLowerCase());
+}
+
+function addName() {
+  const input = document.getElementById('nameInput');
+  const val = input.value.trim();
+  if (!val) return;
+  if (names.map(n => n.toLowerCase()).includes(val.toLowerCase())) {
+    showToast('Bu isim zaten listede!'); return;
+  }
+  names.push(val);
+  input.value = '';
+  renderTags();
+  input.focus();
+}
+
+document.getElementById('nameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addName();
+});
+
+function removeName(i) {
+  names.splice(i, 1);
+  renderTags();
+}
+
+function renderTags() {
+  const list = document.getElementById('tagList');
+  const note = document.getElementById('vipNote');
+  list.innerHTML = '';
+
+  const hasVip = names.some(n => isVip(n));
+  note.classList.toggle('visible', hasVip);
+
+  if (!names.length) {
+    list.innerHTML = '<span class="empty-msg">Henüz isim eklenmedi.</span>';
+    return;
+  }
+  names.forEach((n, i) => {
+    const t = document.createElement('div');
+    t.className = 'tag' + (isVip(n) ? ' vip' : '');
+    t.innerHTML = `${isVip(n) ? '⭐ ' : ''}${escHtml(n)}
+      <button class="tag-del" title="Kaldır" onclick="removeName(${i})">×</button>`;
+    list.appendChild(t);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ── DRAW LOGIC ──
+function pickWinners() {
+  const vipInList = names.filter(n => isVip(n));
+  const nonVip    = names.filter(n => !isVip(n));
+
+  let winners = [];
+
+  if (vipInList.length >= selectedCount) {
+    // more VIPs than slots: just pick from VIPs
+    winners = shuffle([...vipInList]).slice(0, selectedCount);
+  } else {
+    winners = [...vipInList];
+    const remaining = selectedCount - winners.length;
+    const pool = shuffle([...nonVip]);
+    winners = winners.concat(pool.slice(0, remaining));
+    winners = shuffle(winners); // mix vips into random positions
+  }
+  return winners;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ── BALL COLORS ──
+const BALL_COLORS = [
+  ['#F4A900','#E07800'], ['#3ED6C9','#1A9E98'],
+  ['#E05A5A','#A83030'], ['#7B68EE','#5040C0'],
+  ['#52D68A','#2A9A58'], ['#F07D4A','#C04A1A'],
+];
+
+function makeBall(label, ci) {
+  const [c1,c2] = BALL_COLORS[ci % BALL_COLORS.length];
+  const b = document.createElement('div');
+  b.className = 'dball';
+  b.style.background = `radial-gradient(circle at 35% 30%, ${c1}, ${c2})`;
+  b.textContent = label.length > 6 ? label.slice(0,5)+'…' : label;
+  return b;
+}
+
+// ── DRUM ANIMATION ──
+function animateDrum(namesToShow) {
+  const container = document.getElementById('drumBalls');
+  container.innerHTML = '';
+
+  const balls = [];
+  const orbits = namesToShow.map((_, i) => {
+    const b = makeBall(namesToShow[i], i);
+    container.appendChild(b);
+    balls.push(b);
+
+    const angle = (i / namesToShow.length) * Math.PI * 2;
+    const r = 65;
+    const cx = 100 + Math.cos(angle) * r;
+    const cy = 100 + Math.sin(angle) * r;
+    gsap.set(b, { x: cx - 18, y: cy - 18 });
+    return { b, angle: angle + 0, r };
+  });
+
+  let t = 0;
+  let speed = 0.06;
+  const tl = gsap.timeline();
+
+  function spin() {
+    t += speed;
+    orbits.forEach((o, i) => {
+      const a = o.angle + t + (i / orbits.length) * Math.PI * 2;
+      const cx = 100 + Math.cos(a) * o.r;
+      const cy = 100 + Math.sin(a) * o.r;
+      gsap.set(o.b, { x: cx - 18, y: cy - 18 });
+    });
+  }
+
+  return { spin, orbits, balls };
+}
+
+// ── SLOT MACHINE ──
+function createSlot(index) {
+  const wrap = document.createElement('div');
+  wrap.className = 'slot-track';
+  wrap.id = `slot-${index}`;
+
+  const inner = document.createElement('div');
+  inner.className = 'slot-inner';
+  inner.id = `slot-inner-${index}`;
+  wrap.appendChild(inner);
+
+  document.getElementById('slotArea').appendChild(wrap);
+  return inner;
+}
+
+function spinSlot(inner, candidates, winner, delay) {
+  return new Promise(resolve => {
+    const total = 28 + Math.floor(Math.random() * 12);
+    const items = [];
+
+    // fill with random names + winner at end
+    for (let i = 0; i < total; i++) {
+      const name = i === total - 1
+        ? winner
+        : candidates[Math.floor(Math.random() * candidates.length)];
+      const div = document.createElement('div');
+      div.className = 'slot-item';
+      div.textContent = name;
+      inner.appendChild(div);
+      items.push(div);
+    }
+
+    const itemH = 60;
+    const targetY = -(total - 1) * itemH + 8;
+
+    gsap.fromTo(inner,
+      { y: 0 },
+      {
+        y: targetY,
+        duration: 3.2,
+        delay,
+        ease: 'power4.out',
+        onComplete: resolve
+      }
+    );
+  });
+}
+
+// ── MAIN DRAW ──
+async function startDraw() {
+  if (isDrawing) return;
+  if (names.length < 2) { showToast('En az 2 isim gerekli!'); return; }
+  if (selectedCount > names.length) {
+    showToast(`Listede yalnızca ${names.length} kişi var!`); return;
+  }
+
+  isDrawing = true;
+  document.getElementById('drawBtn').disabled = true;
+
+  // Switch panels
+  gsap.to('#setupPanel', { opacity: 0, y: -20, duration: .4, onComplete: () => {
+    document.getElementById('setupPanel').style.display = 'none';
+    document.getElementById('drawStage').style.display = 'flex';
+    gsap.from('#drawStage', { opacity: 0, y: 20, duration: .5 });
+  }});
+
+  const winners = pickWinners();
+
+  // ── Phase 1: Drum spin ──
+  await new Promise(r => setTimeout(r, 600));
+  const { spin, balls } = animateDrum(names);
+
+  let spinning = true;
+  const raf = () => { if (spinning) { spin(); requestAnimationFrame(raf); } };
+  requestAnimationFrame(raf);
+
+  // ── Phase 2: Slots ──
+  await new Promise(r => setTimeout(r, 1800));
+  document.getElementById('slotArea').innerHTML = '';
+
+  const slotPromises = winners.map((winner, i) => {
+    const inner = createSlot(i);
+    return spinSlot(inner, names, winner, i * 0.5);
+  });
+
+  await Promise.all(slotPromises);
+  spinning = false;
+
+  // ── Phase 3: Results ──
+  await new Promise(r => setTimeout(r, 400));
+
+  const grid = document.getElementById('resultsGrid');
+  grid.style.display = 'grid';
+  grid.innerHTML = '';
+
+  winners.forEach((name, i) => {
+    const card = document.createElement('div');
+    card.className = 'result-card' + (isVip(name) ? ' vip' : '');
+
+    const crown = isVip(name) ? '<div class="result-crown">⭐</div>' : '';
+    card.innerHTML = `
+      ${crown}
+      <div class="result-rank">#${i + 1}. Kazanan</div>
+      <div class="result-name">${escHtml(name)}</div>
+    `;
+    grid.appendChild(card);
+
+    gsap.to(card, {
+      opacity: 1, y: 0, duration: .5,
+      delay: i * 0.18,
+      ease: 'back.out(1.5)'
+    });
+  });
+
+  // Confetti!
+  setTimeout(() => {
+    confetti({ particleCount: 120, spread: 80, origin: { y: .6 },
+      colors: ['#F4A900','#3ED6C9','#F0F4FF','#E07800'] });
+    setTimeout(() => confetti({ particleCount: 60, spread: 100,
+      origin: { x: .2, y: .5 }, colors: ['#F4A900','#7B68EE'] }), 400);
+    setTimeout(() => confetti({ particleCount: 60, spread: 100,
+      origin: { x: .8, y: .5 }, colors: ['#3ED6C9','#E05A5A'] }), 700);
+  }, 200);
+
+  // Hide drum
+  gsap.to('.drum-wrap', { opacity: 0, scale: .8, duration: .4 });
+  gsap.to('#slotArea', { opacity: 0, height: 0, duration: .4, delay: .2 });
+}
+
+// ── RESET ──
+function resetAll() {
+  isDrawing = false;
+  document.getElementById('drawBtn').disabled = false;
+  document.getElementById('drawStage').style.display = 'none';
+  document.getElementById('slotArea').innerHTML = '';
+  document.getElementById('resultsGrid').style.display = 'none';
+  document.getElementById('resultsGrid').innerHTML = '';
+  document.getElementById('drumBalls').innerHTML = '';
+  gsap.set('.drum-wrap', { opacity: 1, scale: 1 });
+  gsap.set('#slotArea', { opacity: 1, height: 'auto' });
+  document.getElementById('setupPanel').style.display = 'flex';
+  gsap.fromTo('#setupPanel', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .4 });
+}
+</script>
+</body>
+</html>
